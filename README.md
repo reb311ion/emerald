@@ -25,6 +25,11 @@ Copy the repository files into any of `ghidra_scripts` directories, open the Scr
 ![image](https://user-images.githubusercontent.com/22657154/84805521-ae5e6100-b004-11ea-8eb4-96f0dc469df5.png)
 
 ## ✨Demo:
+[DynamoRIO](https://github.com/DynamoRIO/dynamorio) drcov data can be generated using the following command:
+
+```c
+drrun -t drcov -- [MODULE_NAME] [ARGS]
+```
 
 ![image](https://user-images.githubusercontent.com/22657154/84803446-4dce2480-b002-11ea-93db-52724b0f3bab.png)
 
