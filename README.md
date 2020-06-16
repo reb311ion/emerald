@@ -34,4 +34,4 @@ Licensed under [GNU General Public License v3.0](https://github.com/reb311ion/re
 
 ## ⛏️ BUG? OPEN NEW ISSUE
 
-OPEN [NEW ISSUE](https://github.com/reb311ion/emerald /issues)
+OPEN [NEW ISSUE](https://github.com/reb311ion/emerald/issues)
