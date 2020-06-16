@@ -348,7 +348,7 @@ class Emerald():
 
 if __name__ == '__main__':
     execute = Exec()
-    TABLE_DIALOG = createTableChooserDialog(currentProgram.getName() + " Function", execute)
+    TABLE_DIALOG = createTableChooserDialog(currentProgram.getName() + " Functions", execute)
     TABLE_DIALOG.addCustomColumn(FunctionName())
     TABLE_DIALOG.addCustomColumn(CovRate())
     TABLE_DIALOG.addCustomColumn(BlockHit())
