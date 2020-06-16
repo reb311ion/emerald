@@ -16,6 +16,8 @@
     <img src="https://img.shields.io/badge/license-GPLv3-blue.svg"
   </a>
 </div>
+   
+
 ## 🚀 Installation:
 
 Copy the repository files into any of `ghidra_scripts` directories, open the Script Manager and search for emerald and enable In Tool option:
