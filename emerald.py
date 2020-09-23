@@ -1,8 +1,8 @@
-#Import Drcov code coverage data 
-#@author @reb311ion
-#@keybinding shift I
-#@category Analysis
-#@toolbar emerald.png
+# Import Drcov code coverage data
+# @author @reb311ion
+# @keybinding shift I
+# @category Analysis
+# @toolbar emerald.png
 
 
 from ghidra.program.model.symbol.SourceType import USER_DEFINED
@@ -15,18 +15,20 @@ from ghidra.app.script import GhidraScript
 from ghidra.program.model.address import Address
 from ghidra.program.model.address import AddressSet
 from java.awt import Color
+from utility.function import Callback
 from ghidra.app.decompiler import DecompInterface, DecompileOptions
 from ghidra.framework.plugintool.util import OptionsService
 from ghidra.util.task import TaskMonitor
 
 service = state.getTool().getService(ColorizingService)
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Table UI initialization
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 TABLE_DIALOG = None
 FINAL_MATCH_DICT = {}
+
 
 class Exec(TableChooserExecutor):
     def getButtonName(self):
@@ -58,6 +60,7 @@ class CovRate(StringColumnDisplay):
         global FINAL_MATCH_DICT
         return FINAL_MATCH_DICT[str(value)][1]
 
+
 class BlockHit(StringColumnDisplay):
     def getColumnName(self):
         return "Block Hit"
@@ -65,6 +68,7 @@ class BlockHit(StringColumnDisplay):
     def getColumnValue(self, value):
         global FINAL_MATCH_DICT
         return FINAL_MATCH_DICT[str(value)][2]
+
 
 class Initializer(AddressableRowObject):
     head = ""
@@ -76,14 +80,16 @@ class Initializer(AddressableRowObject):
     def toString(self):
         return self.head
 
-#------------------------------------------------------------------------------
-# Drcov Parser
-#------------------------------------------------------------------------------
 
-#!/usr/bin/env python
+# ------------------------------------------------------------------------------
+# Drcov Parser
+# ------------------------------------------------------------------------------
+
+# !/usr/bin/env python
 
 from struct import unpack
 from os.path import basename
+
 
 def detect_format(filename):
     enough_bytes = 256
@@ -191,7 +197,7 @@ def parse_drcov_binary_blocks(block_data, filename, module_ids, module_base, mod
 def parse_drcov_ascii_blocks(block_data, filename, module_ids, module_base, module_blocks, debug):
     blocks = set()
     blocks_seen = 0
-    int_base = 0  
+    int_base = 0
     offset_dict = {}
 
     for line in block_data.split(b"\n"):
@@ -199,8 +205,8 @@ def parse_drcov_ascii_blocks(block_data, filename, module_ids, module_base, modu
         right_bracket_index = line.find(b']')
         if left_bracket_index == -1 or right_bracket_index == -1:
             continue
-        block_module_id = int(line[left_bracket_index+1: right_bracket_index])
-        block_offset, block_size = line[right_bracket_index+2:].split(b',')
+        block_module_id = int(line[left_bracket_index + 1: right_bracket_index])
+        block_offset, block_size = line[right_bracket_index + 2:].split(b',')
 
         if int_base:
             block_offset = int(block_offset, int_base)
@@ -250,12 +256,12 @@ def parse_drcov_file(filename, module_base, module_blocks, debug=True):
     block_header_candidate = data[header_end_location:header_end_location + len(ascii_block_header)]
     if block_header_candidate == ascii_block_header:
         binary_file = False
-        header_end_location = data.find(b"\n", header_end_location) + 1 
+        header_end_location = data.find(b"\n", header_end_location) + 1
 
     header = data[:header_end_location].decode()
     block_data = data[header_end_location:]
 
-    module_dict = parse_drcov_header(header, filename, debug) 
+    module_dict = parse_drcov_header(header, filename, debug)
     main_module = ""
     for key in module_dict.keys():
         if key.endswith(".exe"):
@@ -273,25 +279,28 @@ def parse_drcov_file(filename, module_base, module_blocks, debug=True):
     return block_dict
 
 
-
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Emerald main class
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 class Emerald():
-
     program_base = int(getFirstData().getAddress().toString(), 16)
     cov_functions = {}
-
 
     def __init__(self):
         file_path = askFile("Import Drcov", "Import").toString()
         self.basic_blocks = parse_coverage_file(file_path)
 
-
     def set_basic_block_colors(self, start_addr, size):
-            service.setBackgroundColor(start_addr, start_addr.add(size), Color(0, 255, 172))
-    
+        service.setBackgroundColor(start_addr, start_addr.add(size), Color(0, 255, 172))
+
+    def decolorize_blocks(self):
+        start()
+        for bb in self.basic_blocks.keys():
+            start_addr = toAddr(bb + self.program_base)
+            block_size = self.basic_blocks[bb] - 1
+            service.clearBackgroundColor(start_addr, start_addr.add(block_size))
+        end(True)
 
     def colorize_blocks(self):
         global FINAL_MATCH_DICT
@@ -300,6 +309,7 @@ class Emerald():
         decompInterface = DecompInterface()
         decompInterface.openProgram(currentProgram)
 
+        start()  # starting a database transition
         cov_block_list = []
         for bb in self.basic_blocks.keys():
             start_addr = toAddr(bb + self.program_base)
@@ -309,7 +319,7 @@ class Emerald():
             if function and not function in cov_block_list:
                 cov_block_list.append(function)
 
-
+        end(True)  # ending the db transition started before and setting Commit to true
 
         for function in cov_block_list:
             hfunction = decompInterface.decompileFunction(function, 30, TaskMonitor.DUMMY).getHighFunction()
@@ -325,25 +335,49 @@ class Emerald():
                 if bg_color and bg_color.getRGB() == -16711764:
                     total_block_size += 1
                     total_cov_size += block_size
-            
+
             block_hit = str(total_block_size) + "/" + str(basic_block_len)
 
             if total_cov_size > 0:
-                total_cov_size = str(int(100 * float(total_cov_size)/float(function_size))) + "%"
+                total_cov_size = str(int(100 * float(total_cov_size) / float(function_size))) + "%"
             elif total_block_size == basic_block_len:
                 total_cov_size = "100%"
             else:
                 total_cov_size = "0%"
 
-            FINAL_MATCH_DICT[function.getName()] = [function.getName(), total_cov_size, block_hit, function.getEntryPoint()]
+            FINAL_MATCH_DICT[function.getName()] = [function.getName(), total_cov_size, block_hit,
+                                                    function.getEntryPoint()]
 
-            
         for key in FINAL_MATCH_DICT.keys():
             init_obj = Initializer()
             init_obj.head = key
             init_obj.function_address = FINAL_MATCH_DICT[key][3]
             FINAL_MATCH_DICT[key].append(init_obj)
             TABLE_DIALOG.add(init_obj)
+
+        save_csv = askYesNo("Export", "Export coverage information as CSV?")
+        if not save_csv:
+            return
+        export_path = askFile("Where to store the export?", "Choose File")
+        if not export_path:
+            return
+        with open(export_path.getAbsolutePath(), 'w') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(["Function Name", "Coverage Rate", "Blocks Hit", "Function Entry Point"])
+            for key in FINAL_MATCH_DICT.keys():
+                writer.writerow(FINAL_MATCH_DICT[key][:-1])
+
+
+class OnCloseCallback(Callback):
+    def __init__(self, emerald):
+        self.emerald = emerald
+
+    def call(self):
+        decolorize = askYesNo("Decolorizing?", "Do you want to undo colorization?")
+        if decolorize:
+            print("Decolorizing... ")
+            self.emerald.decolorize_blocks()
+            print("done")
 
 
 if __name__ == '__main__':
@@ -356,5 +390,6 @@ if __name__ == '__main__':
     emerald = Emerald()
     emerald.colorize_blocks()
 
-    TABLE_DIALOG.show()
+    TABLE_DIALOG.setClosedListener(OnCloseCallback(emerald))
 
+    TABLE_DIALOG.show()
