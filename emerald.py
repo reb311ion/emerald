@@ -20,6 +20,8 @@ from ghidra.app.decompiler import DecompInterface, DecompileOptions
 from ghidra.framework.plugintool.util import OptionsService
 from ghidra.util.task import TaskMonitor
 
+import csv
+
 service = state.getTool().getService(ColorizingService)
 
 # ------------------------------------------------------------------------------
