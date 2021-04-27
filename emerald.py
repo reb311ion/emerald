@@ -155,7 +155,10 @@ def parse_drcov_header(header, filename, debug):
         if module_table_start:
             columns = line.split(",")
             mline = line.strip().split(",")
-            module_dict[mline[-1]] = mline[0]
+            bin_name = mline[-1] 
+            if bin_name not in module_dict:
+                module_dict[bin_name] = set()
+            module_dict[bin_name].add(int(mline[0]))
     if not module_table_start:
         raise Exception('[!] No module table found in "%s"' % filename)
 
@@ -177,7 +180,7 @@ def parse_drcov_binary_blocks(block_data, filename, module_ids, module_base, mod
     for i in range(0, block_data_len, 8):
         block_module_id = unpack("<H", block_data[i + 6:i + 8])[0]
 
-        if block_module_id == module_ids:
+        if block_module_id in module_ids:
             block_offset = unpack("<I", block_data[i:i + 4])[0]
             block_size = unpack("<H", block_data[i + 4:i + 6])[0]
             block_addr = module_base + block_offset
@@ -271,7 +274,7 @@ def parse_drcov_file(filename, module_base, module_blocks, debug=True):
             break
 
     module_ids = askChoice("Module List", "Please Choose Module", module_dict.keys(), main_module)
-    module_ids = int(module_dict[module_ids])
+    module_ids = module_dict[module_ids]
 
     if binary_file:
         parse_blocks = parse_drcov_binary_blocks
@@ -325,6 +328,9 @@ class Emerald():
 
         for function in cov_block_list:
             hfunction = decompInterface.decompileFunction(function, 30, TaskMonitor.DUMMY).getHighFunction()
+            if not hfunction:
+                print("Cannt get function %s\n" % function.getName())
+                continue
             basic_blocks = hfunction.getBasicBlocks()
             basic_block_len = len(basic_blocks)
             total_block_size = 0
