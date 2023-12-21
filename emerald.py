@@ -174,6 +174,7 @@ def parse_drcov_binary_blocks(block_data, filename, module_ids, module_base, mod
     remainder = block_data_len % 8
     if remainder != 0:
         block_data = block_data[:-remainder]
+        block_data_len -= remainder
     if debug:
         module_dict = {}
 
